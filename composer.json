@@ -1,0 +1,21 @@
+{
+  "name": "tommyku/liba_lib",
+  "description": "A wrapper to HKUST library room booking system.",
+  "require": {
+    "php": ">=5.4.0",
+    "rmccue/requests": ">=1.0"
+  },
+  "autoload": {
+    "psr-0": {
+      "LibaAPI": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Tommy Ku",
+      "email": "zoo1929@outlook.com"
+    }
+  ],
+  "version": "0.0.1",
+  "minimum-stability": "dev"
+}
