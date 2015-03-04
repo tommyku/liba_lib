@@ -94,8 +94,69 @@ class Parser
         ];
 
         // find the room steps from thead
+        $dom = str_get_dom($schedule);
+        $steps = self::findRoomSteps($dom, $room);
         // run through the tbody
+        $timeHead = self::getTimeHeadByArea($area);
+        $roomCount = count($dom('table[id="day_main"] > thead > tr > th'))-2;
+        $slotsCount = self::getSlotsCountByArea($area);
+        $trs = $dom('table[id="day_main"] > tbody > tr');
 
+        // O(n^2) mapping
+        // fill in 1/0 first
+        $grid = array_fill(0, $roomCount, array_fill(0, $slotsCount, 0));
+        $skip = array_fill(0, $roomCount, 0); // no skip initially
+
+        foreach ($trs as $rm => $tr) {
+            $head = 1; // head for grabbing td from tr
+            foreach ($skip as $key => $val) {
+                if ($val > 1) { // skipping
+                    --$skip[$key];
+                } else {
+                    // new timeslot or existing appt, see the td
+                    $td = $tr('td', $head);
+                    ++$head;
+                    // existing appt?
+                    if (strpos($td->class, 'new') === false) {
+                        // echo $td->html();
+                        $skip[$key] = $td->rowspan;
+                        for ($i=$rm; $i<$rm+$td->rowspan; ++$i) {
+                            $grid[$key][$i] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // generate timeslots from $grid
+        // run through thead to get all room names first < this is for parseSchedule
+        $slotHead = NULL;
+        foreach ($grid[$steps] as $time => $val) {
+            if ($val === 1) {
+                if ($slotHead !== NULL) {
+                    // close it
+                    $data['timeslots'][] = [
+                        'start' => ($slotHead+$timeHead),
+                        'end' => ($time+$timeHead),
+                        'duration' => $time-$slotHead
+                    ];
+                    $slotHead = NULL;
+                }
+            } else {
+                if ($slotHead === NULL) {
+                    $slotHead = $time;
+                }
+            }
+        }
+
+        if ($slotHead !== NULL) {
+            // no time head, we guess from $grid
+            $data['timeslots'][] = [
+                'start' => ($slotHead+$timeHead),
+                'end' => ($slotsCount+$timeHead),
+                'duration' => $slotsCount-$slotHead
+            ];
+        }
 
         return $data;
     }
@@ -122,7 +183,7 @@ class Parser
         $request = \Requests::get($url, [], $options);
         switch ($request->status_code) {
         case 401:
-            throw Exceptions\UnauthorizedException('Wrong username or password when loading schedule');
+            throw new Exceptions\UnauthorizedException('Wrong username or password when loading schedule');
         default:
             return $request->body;
         }
@@ -177,5 +238,52 @@ class Parser
             'id' => intval($id)
         ];
         return $baseURL.http_build_query($parameters);
+    }
+
+    private static function getTimeHeadByArea($area)
+    {
+        switch (intval($area)) {
+        case 3;
+        case 10:
+        case 4:
+        case 6:
+            return 16;
+            break;
+        case 8:
+        default:
+            return 0;
+        }
+    }
+
+    private static function getSlotsCountByArea($area)
+    {
+        switch (intval($area)) {
+        case 3;
+        case 10:
+        case 4:
+        case 6:
+            return 30;
+            break;
+        case 8:
+        default:
+            return 48;
+        }
+    }
+
+    private static function findRoomSteps($dom, $room)
+    {
+        $steps = -1;
+        $day_main = $dom('table[id="day_main"] > thead > tr:first-child > th'); // first row
+        foreach ($day_main as $i => $el) {
+            $a = $el('a');
+            if (count($a) && strpos($a[0]->href, 'room='.$room) !== false) {
+                $steps = $i;
+                break;
+            }
+        }
+        if ($steps == -1) {
+            throw Exceptions\RoomNotExistException('Room '.$room.' not in this area '.$area.'?');
+        }
+        return $steps-1;
     }
 }
