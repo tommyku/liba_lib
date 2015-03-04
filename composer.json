@@ -8,7 +8,10 @@
   "autoload": {
     "psr-0": {
       "LibaAPI": "src/"
-    }
+    },
+    "files": [
+      "lib/ganon.php"
+    ]
   },
   "authors": [
     {
