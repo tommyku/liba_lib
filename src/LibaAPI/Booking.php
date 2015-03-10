@@ -18,6 +18,4 @@ class Booking
         $this->bAuth_pass = $_bAuth_pass;
     }
 
-    public function
-
 }
