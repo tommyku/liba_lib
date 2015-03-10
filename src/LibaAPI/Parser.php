@@ -4,6 +4,8 @@ namespace LibaAPI;
 
 class Parser
 {
+    protected static $areas = [3, 10, 4, 6, 8];
+
     // singleton pattern
     public static function getInstance()
     {
@@ -39,21 +41,6 @@ class Parser
     }
 
     /**
-     * One day, one area, all room
-     *
-     * @param DateTime $date
-     * @param string $area
-     * @return array Array of rooms and timeslots in the given area
-     */
-    public static function parseArea($_bAuth_user = NULL, $_bAuth_pass = NULL, $date, $area)
-    {
-        if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
-            throw InvalidArgumentException('Schedule class constructor only accept non-null username and password');
-        }
-
-    }
-
-    /**
      * One day, all area, all room
      *
      * @param string $_bAuth_user
@@ -63,10 +50,16 @@ class Parser
      */
     public static function parseDay($_bAuth_user = NULL, $_bAuth_pass = NULL, $date)
     {
-        if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
-            throw InvalidArgumentException('Schedule class constructor only accept non-null username and password');
+        // bauth check done by parseArea
+        $data = [
+            'date' => $date,
+            'areas' => []
+        ];
+        foreach(self::$areas as $area) {
+            $data['areas'][strval($area)] = self::parseArea($_bAuth_user, $_bAuth_pass, $date, $area);
         }
 
+        return $data;
     }
 
     /**
@@ -81,26 +74,59 @@ class Parser
      */
     public static function parseRoom($_bAuth_user = NULL, $_bAuth_pass = NULL, $date, $area, $room)
     {
+        // bauth check done by parseArea
+        $areaSchedule = self::parseArea($_bAuth_user, $_bAuth_pass, $date, $area);
+        $roomName = strval($room);
+        // TODO: the key should be changed to room id just parseDay
+        foreach ($areaSchedule['rooms'] as $val) {
+            if ($val['room'] == $roomName) {
+                return $val;
+            }
+        }
+
+        throw new RoomNotExistException('Room not in this area?');
+    }
+
+
+    /**
+     * One day, one area, all room
+     *
+     * @param DateTime $date
+     * @param string $area
+     * @return array Array of rooms and timeslots in the given area
+     */
+    public static function parseArea($_bAuth_user = NULL, $_bAuth_pass = NULL, $date, $area)
+    {
         if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
             throw InvalidArgumentException('Schedule class constructor only accept non-null username and password');
         }
 
-        $url = self::buildScheduleURL($date, $area, $room);
+        $url = self::buildScheduleURL($date, $area);
         $schedule = self::loadSchedule($_bAuth_user, $_bAuth_pass, $url);
 
         $data = [
-            'room' => $room,
-            'timeslots' => []
+            'area' => $area,
+            'date' => $date,
+            'rooms' => []
         ];
 
         // find the room steps from thead
         $dom = str_get_dom($schedule);
-        $steps = self::findRoomSteps($dom, $room);
         // run through the tbody
         $timeHead = self::getTimeHeadByArea($area);
         $roomCount = count($dom('table[id="day_main"] > thead > tr > th'))-2;
         $slotsCount = self::getSlotsCountByArea($area);
         $trs = $dom('table[id="day_main"] > tbody > tr');
+
+
+        $ths = $dom('table[id="day_main"] > thead > tr > th');
+        for ($i=1; $i<$roomCount+1; ++$i) {
+            $th = $ths[$i];
+            $data['rooms'][] = [
+                'room' => $th->{'data-room'},
+                'timeslots' => []
+            ];
+        }
 
         // O(n^2) mapping
         // fill in 1/0 first
@@ -130,32 +156,34 @@ class Parser
 
         // generate timeslots from $grid
         // run through thead to get all room names first < this is for parseSchedule
-        $slotHead = NULL;
-        foreach ($grid[$steps] as $time => $val) {
-            if ($val === 1) {
-                if ($slotHead !== NULL) {
-                    // close it
-                    $data['timeslots'][] = [
-                        'start' => ($slotHead+$timeHead),
-                        'end' => ($time+$timeHead),
-                        'duration' => $time-$slotHead
-                    ];
-                    $slotHead = NULL;
-                }
-            } else {
-                if ($slotHead === NULL) {
-                    $slotHead = $time;
+        foreach ($data['rooms'] as $steps => $room) {
+            $slotHead = NULL;
+            foreach ($grid[$steps] as $time => $val) {
+                if ($val === 1) {
+                    if ($slotHead !== NULL) {
+                        // close it
+                        $data['rooms'][$steps]['timeslots'][] = [
+                            'start' => ($slotHead+$timeHead),
+                            'end' => ($time+$timeHead),
+                            'duration' => $time-$slotHead
+                        ];
+                        $slotHead = NULL;
+                    }
+                } else {
+                    if ($slotHead === NULL) {
+                        $slotHead = $time;
+                    }
                 }
             }
-        }
 
-        if ($slotHead !== NULL) {
-            // no time head, we guess from $grid
-            $data['timeslots'][] = [
-                'start' => ($slotHead+$timeHead),
-                'end' => ($slotsCount+$timeHead),
-                'duration' => $slotsCount-$slotHead
-            ];
+            if ($slotHead !== NULL) {
+                // no time head, we guess from $grid
+                $data['rooms'][$steps]['timeslots'][] = [
+                    'start' => ($slotHead+$timeHead),
+                    'end' => ($slotsCount+$timeHead),
+                    'duration' => $slotsCount-$slotHead
+                ];
+            }
         }
 
         return $data;
