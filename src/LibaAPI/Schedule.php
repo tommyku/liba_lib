@@ -3,22 +3,66 @@ namespace LibaAPI;
 
 class Schedule
 {
-    protected $bAuth_user = '';
-    protected $bAuth_pass = '';
+    /**
+     * @var string $bAuth_user ITSC username for basic auth login
+     * @var string $bAuth_pass ITSC password for basic auth login
+     */
+    protected $bAuth_user;
+    protected $bAuth_pass;
 
     public function __construct($_bAuth_user = NULL, $_bAuth_pass = NULL)
     {
-        $this->bAuth_user = ($_bAuth_user === NULL) ? $this->bAuth_user : $_bAuth_user;
-        $this->bAuth_pass = ($_bAuth_pass === NULL) ? $this->bAuth_pass : $_bAuth_pass;
+        $this->bAuth_user = ($_bAuth_user === NULL) ? '' : $_bAuth_user;
+        $this->bAuth_pass = ($_bAuth_pass === NULL) ? '' : $_bAuth_pass;
     }
 
+    /**
+     * Get a list of available room at the designated date time
+     *
+     * @param DateTime $date
+     * @param int      $area
+     * @param int      $cover
+     * @param int      $limit
+     * @return array Array of at most $limit timeslots available
+     */
     public function getAvailable($date, $area=3, $cover=1, $limit=50)
     {
         $limit = ($limit <= 50) ? $limit : 50;
 
         $this->validateDate($date);
+
+        $data = Parser::parseArea($this->bAuth_user, $this->bAuth_pass, $date, $area);
+        // flatten it
+        $timeslots = [];
+        foreach($data['rooms'] as $room) {
+            foreach($room['timeslots'] as $t) {
+                $t['room'] = $room['room'];
+                $timeslots[] = $t;
+            }
+        }
+
+        $timeslots = array_slice($timeslots, 0, $limit);
+
+        $rtn = [
+            'area' => $area,
+            'date' => $date,
+            'cover' => $cover,
+            'limit' => $limit,
+            'timeslots' => $timeslots
+        ];
+
+        return $rtn;
     }
 
+    /**
+     * Check if a room is available without the need to login
+     *
+     * @param DateTime $start
+     * @param DateTime $end
+     * @param int      $area
+     * @param int      $room
+     * @return boolean Whether this room is available for booking at this timeslot
+     */
     public function isAvailableWithoutLogin($start, $end, $area, $room)
     {
         $this->validateBookingDuration($start, $end);
@@ -45,7 +89,6 @@ class Schedule
 
     private function validateDate($date)
     {
-        $date->modify('midnight');
         $dateHead = new \DateTime();
         $dateTail = (new \DateTime('+2 weeks, +1 day'))->modify('midnight');
 
