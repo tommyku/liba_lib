@@ -28,27 +28,35 @@ class Parser
     /**
      * Parse available room schedule for the next 2 week for all area
      *
+     * @param string $_bAuth_user
+     * @param string $_bAuth_pass
      * @return array Array date with array of area, containing array of rooms and timeslots
      */
-    public static function parseSchedule()
+    public static function parseSchedule($_bAuth_user = NULL, $_bAuth_pass = NULL)
     {
         // all day, all area, all room
+        if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
+            throw new InvalidArgumentException('Schedule class constructor only accept non-null username and password');
+        }
     }
 
     /**
      * One day, all area, all room
      *
+     * @param string $_bAuth_user
+     * @param string $_bAuth_pass
      * @param DateTime $date
      * @return array Array of area, containing array of rooms and timeslots
      */
-    public static function parseDay($date)
+    public static function parseDay($_bAuth_user = NULL, $_bAuth_pass = NULL, $date)
     {
+        // bauth check done by parseArea
         $data = [
             'date' => $date,
             'areas' => []
         ];
         foreach(self::$areas as $area) {
-            $data['areas'][strval($area)] = self::parseArea($date, $area);
+            $data['areas'][strval($area)] = self::parseArea($_bAuth_user, $_bAuth_pass, $date, $area);
         }
 
         return $data;
@@ -57,14 +65,17 @@ class Parser
     /**
      * One day, one area, one room
      *
+     * @param string $_bAuth_user
+     * @param string $_bAuth_pass
      * @param DateTime $date
      * @param string $area
      * @param string $room
      * @return array Array of available timeslots
      */
-    public static function parseRoom($date, $area, $room)
+    public static function parseRoom($_bAuth_user = NULL, $_bAuth_pass = NULL, $date, $area, $room)
     {
-        $areaSchedule = self::parseArea($date, $area);
+        // bauth check done by parseArea
+        $areaSchedule = self::parseArea($_bAuth_user, $_bAuth_pass, $date, $area);
         $roomName = strval($room);
         // TODO: the key should be changed to room id just parseDay
         foreach ($areaSchedule['rooms'] as $val) {
@@ -76,7 +87,6 @@ class Parser
         throw new RoomNotExistException('Room not in this area?');
     }
 
-
     /**
      * One day, one area, all room
      *
@@ -84,10 +94,14 @@ class Parser
      * @param string $area
      * @return array Array of rooms and timeslots in the given area
      */
-    public static function parseArea($date, $area)
+    public static function parseArea($_bAuth_user = NULL, $_bAuth_pass = NULL, $date, $area)
     {
+        if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
+            throw new InvalidArgumentException('Schedule class constructor only accept non-null username and password');
+        }
+
         $url = self::buildScheduleURL($date, $area);
-        $schedule = self::loadSchedule($url);
+        $schedule = self::loadSchedule($_bAuth_user, $_bAuth_pass, $url);
 
         $data = [
             'area' => $area,
@@ -177,17 +191,22 @@ class Parser
     /**
      * Parse booking schedule for the next 2 week for all area
      *
+     * @param string $_bAuth_user
+     * @param string $_bAuth_pass
      * @return void
      */
-    public static function parseBookingSchedule()
+    public static function parseBookingSchedule($_bAuth_user = NULL, $_bAuth_pass = NULL)
     {
         // all day, all area, all room
+        if ($_bAuth_user === NULL || $_bAuth_pass === NULL) {
+            throw new InvalidArgumentException('Schedule class constructor only accept non-null username and password');
+        }
     }
 
-    private static function loadSchedule($url)
+    private static function loadSchedule($_bAuth_user, $_bAuth_pass, $url)
     {
         $headers = [];
-        $options = [];
+        $options = ['auth' => [$_bAuth_user, $_bAuth_pass]];
         $request = \Requests::get($url, [], $options);
         switch ($request->status_code) {
         case 401:
@@ -200,7 +219,7 @@ class Parser
     private static function buildScheduleURL($date, $area)
     {
         if (!is_a($date, 'DateTime')) {
-            throw InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
+            throw new InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
         }
 
         $baseURL = 'http://lbbooking.ust.hk/calendar/day.php?';
@@ -216,7 +235,7 @@ class Parser
     private static function buildBookingURL($date, $area, $room)
     {
         if (!is_a($date, 'DateTime')) {
-            throw InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
+            throw new InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
         }
         $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry.php?';
         $parameters = [
@@ -234,7 +253,7 @@ class Parser
     private static function buildBookingDetailsURL($date, $area, $room, $id)
     {
         if (!is_a($date, 'DateTime')) {
-            throw InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
+            throw new InvalidArgumentException('Method buildURL accepts only DateTime as first parameter');
         }
 
         $baseURL = 'http://lbbooking.ust.hk/calendar/view_entry.php?';
@@ -290,7 +309,7 @@ class Parser
             }
         }
         if ($steps == -1) {
-            throw Exceptions\RoomNotExistException('Room '.$room.' not in this area '.$area.'?');
+            throw new Exceptions\RoomNotExistException('Room '.$room.' not in this area '.$area.'?');
         }
         return $steps-1;
     }

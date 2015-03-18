@@ -5,9 +5,9 @@ class ParserTest extends PHPUnit_Framework_TestCase
      * @dataProvider parseAreaProvider
      * @testdox Parser should be able to get area schedule
      */
-    public function testParseArea($date, $area)
+    public function testParseArea($bauth_user, $bauth_pass, $date, $area)
     {
-        $res = LibaAPI\Parser::parseArea($date, $area);
+        $res = LibaAPI\Parser::parseArea($bauth_user, $bauth_pass, $date, $area);
         $this->assertArrayHasKey('area', $res);
         $this->assertEquals($res['area'], intval($area));
         $this->assertArrayHasKey('date', $res);
@@ -20,9 +20,9 @@ class ParserTest extends PHPUnit_Framework_TestCase
      * @dataProvider parseRoomProvider
      * @testdox Parser should be able to get room schedule
      */
-    public function testParseRoom($date, $area, $room)
+    public function testParseRoom($bauth_user, $bauth_pass, $date, $area, $room)
     {
-        $res = LibaAPI\Parser::parseRoom($date, $area, $room);
+        $res = LibaAPI\Parser::parseRoom($bauth_user, $bauth_pass, $date, $area, $room);
         $this->assertArrayHasKey('room', $res);
         $this->assertArrayHasKey('timeslots', $res);
         $this->assertEquals(2, count($res));
@@ -37,9 +37,9 @@ class ParserTest extends PHPUnit_Framework_TestCase
      * @dataProvider parseDayProvider
      * @testdox Parser should be able to get room schedules of all areas in a day
      */
-    public function testParseDay($date)
+    public function testParseDay($bauth_user, $bauth_pass, $date)
     {
-        $res = LibaAPI\Parser::parseDay($date);
+        $res = LibaAPI\Parser::parseDay($bauth_user, $bauth_pass, $date);
         $this->assertArrayHasKey('date', $res);
         $this->assertEquals($res['date'], $date);
         $this->assertArrayHasKey('areas', $res);
@@ -54,6 +54,8 @@ class ParserTest extends PHPUnit_Framework_TestCase
     public function parseRoomProvider()
     {
         return [[
+            base64_decode(''),
+            base64_decode(''),
             new DateTime('2015-03-12 15:00:00'),
             3,
             28
@@ -63,6 +65,8 @@ class ParserTest extends PHPUnit_Framework_TestCase
     public function parseAreaProvider()
     {
         return [[
+            base64_decode(''),
+            base64_decode(''),
             new DateTime('2015-03-12 15:00:00'),
             4
         ]];
@@ -71,6 +75,8 @@ class ParserTest extends PHPUnit_Framework_TestCase
     public function parseDayProvider()
     {
         return [[
+            base64_decode(''),
+            base64_decode(''),
             new DateTime('2015-03-12 15:00:00')
         ]];
     }
