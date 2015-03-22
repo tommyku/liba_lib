@@ -25,6 +25,14 @@ class Booking
         $this->login();
     }
 
+    public function book($start, $end, $area, $room)
+    {
+        $check = $this->isBookable($start, $end, $area, $room);
+        if (!$check->valid_booking) {
+            throw new Exceptions\RoomNotBookableException(implode(', ', $check->rules_broken));
+        }
+    }
+
     public function isBookable($start, $end, $area, $room)
     {
         // then get the result
@@ -64,7 +72,7 @@ class Booking
         $request = \Requests::post($baseURL, $headers, $data, $options);
 
         if ($request->status_code == 401) {
-            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
+            throw new Exceptions\UnauthorizedException('the user is not authorized in library system');
         }
 
         if ($this->isJson($request->body)) {
@@ -82,7 +90,7 @@ class Booking
         $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry.php';
         $request = \Requests::get($baseURL, $headers, $options);
         if ($request->status_code == 401) {
-            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
+            throw new Exceptions\UnauthorizedException('the user is not authorized in library system');
         }
         $cookie = $request->cookies; // it is a cookie jar
 
@@ -99,7 +107,7 @@ class Booking
         $cookie->before_request($baseURL, $headers, $data, $type, $options);
         $request = \Requests::post($baseURL, $headers, $data, $options);
         if ($request->status_code == 401) {
-            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
+            throw new Exceptions\UnauthorizedException('the user is not authorized in library system');
         }
 
         // put the logined session into cookie of this instance
