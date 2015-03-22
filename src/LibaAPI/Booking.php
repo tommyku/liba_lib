@@ -29,7 +29,56 @@ class Booking
     {
         $check = $this->isBookable($start, $end, $area, $room);
         if (!$check->valid_booking) {
-            throw new Exceptions\RoomNotBookableException(implode(', ', $check->rules_broken));
+            throw new Exceptions\RoomNotBookableException(json_encode($check));
+        }
+
+        // book it
+        $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry_handler.php';
+        $headers = [];
+        $options = [
+            'auth' => [$this->bAuth_user, $this->bAuth_pass],
+            'follow_redirects' => false
+        ];
+        $data = [
+            'name' => $this->bAuth_user,
+            'description' => '',
+            'start_day' => $start->format('j'),
+            'start_month' => $start->format('m'),
+            'start_year' => $start->format('Y'),
+            'start_seconds' => $this->datetime2second($start),
+            'end_day' => $end->format('j'),
+            'end_month' => $end->format('m'),
+            'end_year' => $end->format('Y'),
+            'end_seconds' => $this->datetime2second($end),
+            'area' => $area,
+            'rooms[]' => $room,
+            'type' => 'U',
+            'returl' => 'http://lbbooking.ust.hk/calendar/edit_entry.php',
+            'create_by' => $this->bAuth_user,
+            'rep_id' => '1',
+            'edit_type' => 'series'
+        ];
+
+        $headers = [
+            'Origin' => 'http://lbbooking.ust.hk',
+            'X-Requested-With' => 'XMLHttpRequest',
+            'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36',
+            'Referer' => 'http://lbbooking.ust.hk/calendar/edit_entry.php?'
+        ];
+        $type = 'POST';
+
+        $this->cookie->before_request($baseURL, $headers, $data, $type, $options);
+        $request = \Requests::post($baseURL, $headers, $data, $options);
+        switch ($request->status_code) {
+        case 200:
+            return false;
+            break;
+        case 302:
+            return true;
+            break;
+        default:
+            return false;
+            break;
         }
     }
 
