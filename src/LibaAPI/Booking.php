@@ -3,10 +3,14 @@ namespace LibaAPI;
 
 class Booking
 {
+    /**
+     * @var string              $bAuth_user ITSC username for basic auth login
+     * @var string              $bAuth_pass ITSC password for basic auth login
+     * @var Requests_Cookie_Jar $cookie     Cookie to store the session key after login
+     */
     protected $bAuth_user;
     protected $bAuth_pass;
-    protected $date;
-    protected $area;
+    protected $cookie;
 
     public function __construct($_bAuth_user = NULL, $_bAuth_pass = NULL)
     {
@@ -16,42 +20,17 @@ class Booking
 
         $this->bAuth_user = $_bAuth_user;
         $this->bAuth_pass = $_bAuth_pass;
+        $this->cookie = NULL;
+
+        $this->login();
     }
 
     public function isBookable($start, $end, $area, $room)
     {
-        if ($this->bAuth_user === '' || $this->bAuth_pass === '') {
-            throw new \InvalidArgumentException('authorization details are not given');
-        }
-
-        // get the cookie
-        $headers = [];
-        $options = ['auth' => [$this->bAuth_user, $this->bAuth_pass]];
-        $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry.php';
-        $request = \Requests::get($baseURL, $headers, $options);
-        if ($request->status == 401) {
-            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
-        }
-        $cookie = $request->cookies; // it is a cookie jar
-
-        // login first
-        $data = [
-            'NewUserName' => $this->bAuth_user,
-            'NewUserPassword' => $this->bAuth_pass,
-            'returl' => '',
-            'TargetURL' => 'edit_entry.php?',
-            'Action' => 'SetName'
-        ];
-        $options['follow_redirects'] = false;
-        $type = 'POST';
-        $cookie->before_request($baseURL, $headers, $data, $type, $options);
-        $request = \Requests::post($baseURL, $headers, $data, $options);
-        if ($request->status == 401) {
-            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
-        }
-
         // then get the result
         $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry_handler.php';
+        $headers = [];
+        $options = ['auth' => [$this->bAuth_user, $this->bAuth_pass]];
         $data = [
             'ajax' => '1',
             'name' => '',
@@ -79,16 +58,58 @@ class Booking
             'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36',
             'Referer' => 'http://lbbooking.ust.hk/calendar/edit_entry.php?'
         ];
-        $cookie->before_request($baseURL, $headers, $data, $type, $options);
-
         $type = 'POST';
-        $cookie->before_request($baseURL, $headers, $data, $type, $options);
+
+        $this->cookie->before_request($baseURL, $headers, $data, $type, $options);
         $request = \Requests::post($baseURL, $headers, $data, $options);
-        if ($request->status == 401) {
+
+        if ($request->status_code == 401) {
             throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
         }
 
-        return $request->body;
+        if ($this->isJson($request->body)) {
+            return json_decode($request->body);
+        } else {
+            throw new \Exception('json decode error, response goes banana?');
+        }
+    }
+
+    private function login()
+    {
+        // get the cookie
+        $headers = [];
+        $options = ['auth' => [$this->bAuth_user, $this->bAuth_pass]];
+        $baseURL = 'http://lbbooking.ust.hk/calendar/edit_entry.php';
+        $request = \Requests::get($baseURL, $headers, $options);
+        if ($request->status_code == 401) {
+            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
+        }
+        $cookie = $request->cookies; // it is a cookie jar
+
+        // login first
+        $data = [
+            'NewUserName' => $this->bAuth_user,
+            'NewUserPassword' => $this->bAuth_pass,
+            'returl' => '',
+            'TargetURL' => 'edit_entry.php?',
+            'Action' => 'SetName'
+        ];
+        $options['follow_redirects'] = false;
+        $type = 'POST';
+        $cookie->before_request($baseURL, $headers, $data, $type, $options);
+        $request = \Requests::post($baseURL, $headers, $data, $options);
+        if ($request->status_code == 401) {
+            throw new Exceptions/UnauthorizedException('the user is not authorized in library system');
+        }
+
+        // put the logined session into cookie of this instance
+        $this->cookie = $cookie;
+    }
+
+    private function isJson($string)
+    {
+        json_decode($string);
+        return (json_last_error() == JSON_ERROR_NONE);
     }
 
     private function datetime2second($date)

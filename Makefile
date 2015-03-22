@@ -11,3 +11,6 @@ test-exception: tests/ExceptionsTest.php
 
 test-schedule: tests/ScheduleTest.php
 	$(UNIT) ScheduleTest tests/ScheduleTest.php
+
+test-booking: tests/BookingTest.php
+	$(UNIT) BookingTest tests/BookingTest.php
