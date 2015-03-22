@@ -22,9 +22,18 @@ class Booking
         $this->bAuth_pass = $_bAuth_pass;
         $this->cookie = NULL;
 
-        $this->login();
+        $this->login(); // login to get a logined cookie
     }
 
+    /**
+     * Book a room
+     *
+     * @param DateTime $start
+     * @param DateTime $end
+     * @param int      $area
+     * @param int      $room
+     * @return boolean Boolean indicating whether the action is successful.
+     */
     public function book($start, $end, $area, $room)
     {
         $check = $this->isBookable($start, $end, $area, $room);
@@ -82,6 +91,16 @@ class Booking
         }
     }
 
+    /**
+     * Check if a room is bookable by calling the library system itself
+     *
+     * @param DateTime $start
+     * @param DateTime $end
+     * @param int      $area
+     * @param int      $room
+     * @throws Exception Throws when the response from library cannot be decoded
+     * @return stdClass JSON resposne from the library system converted into object
+     */
     public function isBookable($start, $end, $area, $room)
     {
         // then get the result
@@ -131,6 +150,11 @@ class Booking
         }
     }
 
+    /**
+     * Login into the library system and store the cookie with session id
+     *
+     * @return void
+     */
     private function login()
     {
         // get the cookie
@@ -163,12 +187,24 @@ class Booking
         $this->cookie = $cookie;
     }
 
+    /**
+     * Check if a string is a valid JSON
+     *
+     * @param string $string
+     * @return boolean Returns true if $string can be decoded as JSON.
+     */
     private function isJson($string)
     {
         json_decode($string);
         return (json_last_error() == JSON_ERROR_NONE);
     }
 
+    /**
+     * Extract the timeslot from a DateTime object
+     *
+     * @param DateTime $date
+     * @return int Timeslot of the day converted from $date
+     */
     private function datetime2second($date)
     {
         return intval($date->format('G'))*3600+intval($date->format('i'))*60+intval($date->format('s'));

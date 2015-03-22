@@ -77,16 +77,35 @@ class Schedule
         return false;
     }
 
+    /**
+     * Extract the second of a day from a DateTime object
+     *
+     * @param DateTime $date
+     * @return int Second of the day converted from $date
+     */
     private function datetime2second($date)
     {
         return intval($date->format('G'))*3600+intval($date->format('i'))*60+intval($date->format('s'));
     }
 
+    /**
+     * Extract the timeslot from a DateTime object
+     *
+     * @param DateTime $date
+     * @return int Timeslot of the day converted from $date
+     */
     private function dateTime2timeslot($date)
     {
         return (intval($date->format('G'))*2 + (($date->format('i') == '00') ? 0 : 1));
     }
 
+    /**
+     * Validate a date against the library date range
+     *
+     * @param DateTime $date
+     * @throws LibaAPI\Exceptions\InvalidDateException Throws when the date is outside acceptable range
+     * @return void
+     */
     private function validateDate($date)
     {
         $dateHead = new \DateTime();
@@ -97,6 +116,13 @@ class Schedule
         }
     }
 
+    /**
+     * Validate a date against the library duration requirement
+     *
+     * @param DateTime $date
+     * @throws LibaAPI\Exceptions\InvalidDateException Throws when the date is outside acceptable range
+     * @return void
+     */
     private function validateBookingDuration($start, $end)
     {
         if ($end <= $start) {
