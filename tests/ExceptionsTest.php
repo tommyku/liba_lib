@@ -28,4 +28,13 @@ class ExceptionsTest extends PHPUnit_Framework_TestCase
         throw new LibaAPI\Exceptions\UnauthorizedException("");
     }
 
+    /**
+     * @expectedException LibaAPI\Exceptions\RoomNotBookableException
+     * @testdox Exception RoomNotBookableException should be available
+     */
+    public function testRoomNotBookableException()
+    {
+        throw new LibaAPI\Exceptions\RoomNotBookableException("");
+    }
+
 }
