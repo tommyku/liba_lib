@@ -19,7 +19,7 @@ class Schedule
     /**
      * Get a list of available room at the designated date time
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @param int      $area
      * @param int      $cover
      * @param int      $limit
@@ -57,8 +57,8 @@ class Schedule
     /**
      * Check if a room is available without the need to login
      *
-     * @param DateTime $start
-     * @param DateTime $end
+     * @param \DateTime $start
+     * @param \DateTime $end
      * @param int      $area
      * @param int      $room
      * @return boolean Whether this room is available for booking at this timeslot
@@ -80,7 +80,7 @@ class Schedule
     /**
      * Extract the second of a day from a DateTime object
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @return int Second of the day converted from $date
      */
     private function datetime2second($date)
@@ -91,7 +91,7 @@ class Schedule
     /**
      * Extract the timeslot from a DateTime object
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @return int Timeslot of the day converted from $date
      */
     private function dateTime2timeslot($date)
@@ -102,7 +102,7 @@ class Schedule
     /**
      * Validate a date against the library date range
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @throws LibaAPI\Exceptions\InvalidDateException Throws when the date is outside acceptable range
      * @return void
      */
@@ -119,7 +119,7 @@ class Schedule
     /**
      * Validate a date against the library duration requirement
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @throws LibaAPI\Exceptions\InvalidDateException Throws when the date is outside acceptable range
      * @return void
      */

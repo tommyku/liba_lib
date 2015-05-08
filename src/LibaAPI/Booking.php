@@ -6,7 +6,7 @@ class Booking
     /**
      * @var string              $bAuth_user ITSC username for basic auth login
      * @var string              $bAuth_pass ITSC password for basic auth login
-     * @var Requests_Cookie_Jar $cookie     Cookie to store the session key after login
+     * @var \Requests\Requests_Cookie_Jar $cookie     Cookie to store the session key after login
      */
     protected $bAuth_user;
     protected $bAuth_pass;
@@ -28,8 +28,8 @@ class Booking
     /**
      * Book a room
      *
-     * @param DateTime $start
-     * @param DateTime $end
+     * @param \DateTime $start
+     * @param \DateTime $end
      * @param int      $area
      * @param int      $room
      * @return boolean Boolean indicating whether the action is successful.
@@ -94,12 +94,12 @@ class Booking
     /**
      * Check if a room is bookable by calling the library system itself
      *
-     * @param DateTime $start
-     * @param DateTime $end
+     * @param \DateTime $start
+     * @param \DateTime $end
      * @param int      $area
      * @param int      $room
-     * @throws Exception Throws when the response from library cannot be decoded
-     * @return stdClass JSON resposne from the library system converted into object
+     * @throws \Exception Throws when the response from library cannot be decoded
+     * @return \stdClass JSON resposne from the library system converted into object
      */
     public function isBookable($start, $end, $area, $room)
     {
@@ -202,7 +202,7 @@ class Booking
     /**
      * Extract the timeslot from a DateTime object
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @return int Timeslot of the day converted from $date
      */
     private function datetime2second($date)

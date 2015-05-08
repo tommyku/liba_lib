@@ -45,7 +45,7 @@ class Parser
      *
      * @param string $_bAuth_user
      * @param string $_bAuth_pass
-     * @param DateTime $date
+     * @param \DateTime $date
      * @return array Array of area, containing array of rooms and timeslots
      */
     public static function parseDay($_bAuth_user = NULL, $_bAuth_pass = NULL, $date)
@@ -67,7 +67,7 @@ class Parser
      *
      * @param string $_bAuth_user
      * @param string $_bAuth_pass
-     * @param DateTime $date
+     * @param \DateTime $date
      * @param string $area
      * @param string $room
      * @return array Array of available timeslots
@@ -90,7 +90,7 @@ class Parser
     /**
      * One day, one area, all room
      *
-     * @param DateTime $date
+     * @param \DateTime $date
      * @param string $area
      * @return array Array of rooms and timeslots in the given area
      */
